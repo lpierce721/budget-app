@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Budget</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --card: #1a2332;
+    --text: #e7ecf3;
+    --muted: #8b9bb4;
+    --green: #3dd68c;
+    --yellow: #f5c542;
+    --red: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 20px;
+    max-width: 480px;
+    margin-inline: auto;
+  }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 8px; }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card h2 { margin: 0 0 8px; font-size: 1.05rem; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; margin: 4px 0; }
+  .label { color: var(--muted); font-size: 0.85rem; }
+  .value { font-weight: 600; font-size: 1.1rem; }
+  .bar {
+    height: 10px;
+    background: #2a3548;
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 10px 0 6px;
+  }
+  .fill { height: 100%; border-radius: 6px; }
+  .flag { font-size: 0.85rem; font-weight: 600; }
+  .flag.ok { color: var(--green); }
+  .flag.warn { color: var(--yellow); }
+  .flag.hot { color: var(--red); }
+  .note { font-size: 0.75rem; color: var(--muted); margin-top: 12px; }
+  .updated { font-size: 0.75rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Weekly Budget</h1>
+<p class="sub">Dining $125 · Groceries $150 · Monday–Sunday</p>
+<p class="updated" id="updated">Loading…</p>
+
+<div class="card">
+  <h2>Dining / Coffee / Alcohol</h2>
+  <div class="row"><span class="label">Spent this week</span><span class="value" id="diningSpent">—</span></div>
+  <div class="bar"><div id="diningFill" class="fill"></div></div>
+  <div class="row"><span class="label">Remaining</span><span class="value" id="diningRemain">—</span></div>
+  <div id="diningFlag" class="flag"></div>
+</div>
+
+<div class="card">
+  <h2>Groceries</h2>
+  <div class="row"><span class="label">Spent this week</span><span class="value" id="grocerySpent">—</span></div>
+  <div class="bar"><div id="groceryFill" class="fill"></div></div>
+  <div class="row"><span class="label">Remaining</span><span class="value" id="groceryRemain">—</span></div>
+  <div id="groceryFlag" class="flag"></div>
+</div>
+
+<p class="note" id="note"></p>
+<p class="note">Updated once a day around 6 PM CT. Weeks run Monday–Sunday. After a category hits its weekly limit, notifications stay quiet until the next Monday.</p>
+
+<script>
+const LIMITS = { dining: 125, grocery: 150 };
+
+function barClass(pct) {
+  if (pct >= 100) return "hot";
+  if (pct >= 80) return "hot";
+  if (pct >= 50) return "warn";
+  return "ok";
+}
+
+function render(data) {
+  const updated = data.updated ? new Date(data.updated).toLocaleString() : "—";
+  document.getElementById("updated").textContent =
+    "Updated " + updated + " · Week of " + (data.week_start || "");
+  document.getElementById("note").textContent = "";
+
+  ["dining", "grocery"].forEach(key => {
+    const d = data[key] || {};
+    const limit = d.limit || LIMITS[key];
+    const spent = d.spent != null ? d.spent : 0;
+    const pct = (spent / limit) * 100;
+    const barPct = Math.min(100, pct);
+    const remain = Math.max(0, limit - spent);
+    const cls = barClass(pct);
+
+    document.getElementById(key + "Spent").textContent = "$" + spent.toFixed(2);
+    document.getElementById(key + "Remain").textContent = "$" + remain.toFixed(2);
+    const fill = document.getElementById(key + "Fill");
+    fill.style.width = barPct + "%";
+    fill.style.background = cls === "ok" ? "#3dd68c" : cls === "warn" ? "#f5c542" : "#ff6b6b";
+    const flag = document.getElementById(key + "Flag");
+    flag.textContent = Math.round(pct) + "%";
+    flag.className = "flag " + cls;
+  });
+}
+
+async function load() {
+  try {
+    const res = await fetch("data.json?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("bad status");
+    const data = await res.json();
+    render(data);
+  } catch (e) {
+    document.getElementById("updated").textContent = "Could not load data";
+  }
+}
+
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>
