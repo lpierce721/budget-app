@@ -1,8 +1,8 @@
 {
-  "updated": "2026-11-06T18:24:00-06:00",
+  "updated": "2026-11-07T18:24:00-06:00",
   "week_start": "2026-11-02",
   "week_end": "2026-11-08",
-  "dining": {"limit": 125, "spent": 92.10},
+  "dining": {"limit": 125, "spent": 104.01},
   "grocery": {"limit": 150, "spent": 78.60},
   "note": ""
 }
